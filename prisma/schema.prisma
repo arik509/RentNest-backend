@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+
+datasource db {
+  provider = "postgresql"
+}
+
+
+enum Role {
+  TENANT
+  LANDLORD
+  ADMIN
+}
+
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+
+enum PropertyAvailability {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+
+enum RentalRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ACTIVE
+  COMPLETED
+}
+
+
+enum PaymentProvider {
+  STRIPE
+  SSLCOMMERZ
+}
+
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+
+
+model User {
+  id String @id @default(uuid())
+  name String
+  email String @unique
+  password String
+  role Role @default(TENANT)
+  status UserStatus @default(ACTIVE)
+  profile Profile?
+  properties Property[]
+  rentalRequests RentalRequest[]
+  reviews Review[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+
+model Profile {
+
+  id String @id @default(uuid())
+  userId String @unique
+  phone String?
+  address String?
+  profilePhoto String?
+  bio String?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+
+model Category {
+  id String @id @default(uuid())
+  name String @unique
+  description String?
+  properties Property[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+
+model Property {
+
+  id String @id @default(uuid())
+  title String
+  description String
+  price Float
+
+  location String
+  address String
+
+  propertyType String
+
+  bedrooms Int
+
+  bathrooms Int
+  amenities String[]
+  images String[]
+
+  availabilityStatus PropertyAvailability @default(AVAILABLE)
+  landlordId String
+  landlord User @relation(fields: [landlordId], references: [id])
+
+  categoryId String
+  category Category @relation(fields: [categoryId], references: [id])
+
+  rentalRequests RentalRequest[]
+  reviews Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([landlordId])
+
+  @@index([location])
+
+  @@index([propertyType])
+
+  @@index([price])
+}
+
+
+
+model RentalRequest {
+
+  id String @id @default(uuid())
+  tenantId String
+  tenant User @relation(fields: [tenantId], references: [id])
+  propertyId String
+  property Property @relation(fields: [propertyId], references: [id])
+
+  message String?
+  status RentalRequestStatus @default(PENDING)
+  payment Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([propertyId])
+}
+
+
+
+model Payment {
+
+  id String @id @default(uuid())
+  transactionId String @unique
+
+  rentalRequestId String @unique
+  rentalRequest RentalRequest @relation(fields: [rentalRequestId], references: [id])
+
+  amount Float
+
+  method String
+
+  provider PaymentProvider
+  status PaymentStatus @default(PENDING)
+  paidAt DateTime?
+
+  createdAt DateTime @default(now())
+}
+
+
+
+model Review {
+
+  id String @id @default(uuid())
+  tenantId String
+  tenant User @relation(fields: [tenantId], references: [id])
+  propertyId String
+  property Property @relation(fields: [propertyId], references: [id])
+  rating Int
+  comment String
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+
+  @@unique([tenantId, propertyId])
+
+  @@index([propertyId])
+}
