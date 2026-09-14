@@ -4,6 +4,7 @@ import { authController } from "./auth.controller.js";
 import auth from "../../middlewares/auth.js";
 import validateRequest from "../../middlewares/validateRequest.js";
 import { authValidation } from "./auth.validation.js";
+import role from "../../middlewares/role.js";
 
 const router = Router();
 
@@ -28,6 +29,19 @@ router.get(
     "/me",
     auth,
     authController.me
+);
+
+router.get(
+    "/tenant-test",
+    auth,
+    role("TENANT"),
+    (req,res)=>{
+
+        res.json({
+            message:"Tenant access granted"
+        });
+
+    }
 );
 
 export default router;
