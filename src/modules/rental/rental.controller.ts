@@ -113,6 +113,31 @@ const updateRequestStatus = async(
 
 };
 
+const completeRentalRequest = async(
+    req:AuthRequest,
+    res:Response
+)=>{
+
+
+    const result =
+        await rentalService.completeRentalRequest(
+            req.user!.id,
+            req.params.id as string
+        );
+
+
+    sendResponse(
+        res,
+        {
+            success:true,
+            statusCode:200,
+            message:"Rental completed successfully",
+            data:result
+        }
+    );
+
+};
+
 
 
 export const rentalController = {
@@ -123,6 +148,8 @@ export const rentalController = {
 
     getLandlordRequests,
 
-    updateRequestStatus
+    updateRequestStatus,
+
+    completeRentalRequest
 
 };

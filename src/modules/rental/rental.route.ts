@@ -45,6 +45,13 @@ router.patch(
     rentalController.updateRequestStatus
 );
 
+router.patch(
+    "/:id/complete",
+    auth,
+    role("LANDLORD"),
+    rentalController.completeRentalRequest
+);
+
 
 
 export default router;

@@ -9,6 +9,8 @@ import adminRoute from "./modules/admin/admin.route.js";
 import categoryRoute from "./modules/category/category.route.js";
 import propertyRoute from "./modules/property/property.route.js";
 import rentalRoute from "./modules/rental/rental.route.js";
+import paymentRoute from "./modules/payment/payment.route.js";
+import reviewRoute from "./modules/review/review.route.js";
 
 
 const app = express();
@@ -77,6 +79,16 @@ app.use(
 app.use(
     "/api/rentals",
     rentalRoute
+);
+
+app.use(
+    "/api/payments",
+    paymentRoute
+);
+
+app.use(
+    "/api/reviews",
+    reviewRoute
 );
 
 app.use(notFound);
