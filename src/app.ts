@@ -11,6 +11,7 @@ import cors from "cors";
 
 import userRoute from "./modules/user/user.route.js";
 import adminRoute from "./modules/admin/admin.route.js";
+import categoryRoute from "./modules/category/category.route.js";
 
 
 const app = express();
@@ -52,6 +53,13 @@ app.use(
 app.use(
     "/api/admin",
     adminRoute
+);
+
+
+
+app.use(
+    "/api/categories",
+    categoryRoute
 );
 
 app.use(notFound);
