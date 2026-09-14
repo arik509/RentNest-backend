@@ -14,6 +14,7 @@ const app = express();
 
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(
     express.urlencoded({
@@ -40,7 +41,7 @@ app.use(notFound);
 
 app.use(globalErrorHandler);
 
-app.use(cookieParser());
+
 
 app.use(
  cors({
