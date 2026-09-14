@@ -9,6 +9,9 @@ import cookieParser from "cookie-parser";
 
 import cors from "cors";
 
+import userRoute from "./modules/user/user.route.js";
+import adminRoute from "./modules/admin/admin.route.js";
+
 
 const app = express();
 
@@ -34,6 +37,21 @@ app.get("/",(req,res)=>{
 app.use(
     "/api/auth",
     authRoute
+);
+
+
+
+
+app.use(
+    "/api/users",
+    userRoute
+);
+
+
+
+app.use(
+    "/api/admin",
+    adminRoute
 );
 
 app.use(notFound);

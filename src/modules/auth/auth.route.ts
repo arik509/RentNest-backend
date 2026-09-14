@@ -31,17 +31,17 @@ router.get(
     authController.me
 );
 
-router.get(
-    "/tenant-test",
-    auth,
-    role("TENANT"),
-    (req,res)=>{
+// router.get(
+//     "/tenant-test",
+//     auth,
+//     role("TENANT"),
+//     (req,res)=>{
 
-        res.json({
-            message:"Tenant access granted"
-        });
+//         res.json({
+//             message:"Tenant access granted"
+//         });
 
-    }
-);
+//     }
+// );
 
 export default router;

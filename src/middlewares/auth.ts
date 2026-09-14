@@ -23,8 +23,8 @@ const auth = (
 
 
     const token =
-        req.headers.authorization ||
-    req.cookies.accessToken;
+    req.cookies.accessToken ||
+    req.headers.authorization;
 
 
 
