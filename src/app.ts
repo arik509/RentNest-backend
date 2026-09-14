@@ -3,6 +3,7 @@ import express from "express";
 import notFound from "./middlewares/notFound.js";
 
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
+import authRoute from "./modules/auth/auth.route.js";
 
 
 const app = express();
@@ -25,6 +26,10 @@ app.get("/",(req,res)=>{
 });
 
 
+app.use(
+    "/api/auth",
+    authRoute
+);
 
 app.use(notFound);
 

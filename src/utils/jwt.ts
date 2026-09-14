@@ -1,0 +1,32 @@
+import jwt from "jsonwebtoken";
+import { config } from "../config/index.js";
+
+
+export const createAccessToken = (
+    payload: object
+) => {
+
+    return jwt.sign(
+        payload,
+        config.jwt.accessSecret,
+        {
+            expiresIn: config.jwt.accessExpiresIn
+        }
+    );
+
+};
+
+
+export const createRefreshToken = (
+    payload: object
+) => {
+
+    return jwt.sign(
+        payload,
+        config.jwt.refreshSecret,
+        {
+            expiresIn: config.jwt.refreshExpiresIn
+        }
+    );
+
+};

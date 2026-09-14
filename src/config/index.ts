@@ -10,21 +10,19 @@ export const config = {
 
     jwt: {
 
-        accessSecret:
-            process.env.JWT_ACCESS_SECRET as string,
+    accessSecret:
+        process.env.JWT_ACCESS_SECRET as string,
 
-        refreshSecret:
-            process.env.JWT_REFRESH_SECRET as string,
+    refreshSecret:
+        process.env.JWT_REFRESH_SECRET as string,
 
+    accessExpiresIn:
+        process.env.JWT_ACCESS_EXPIRES_IN || "1h",
 
-        accessExpiresIn:
-            process.env.JWT_ACCESS_EXPIRES_IN,
+    refreshExpiresIn:
+        process.env.JWT_REFRESH_EXPIRES_IN || "7d"
 
-
-        refreshExpiresIn:
-            process.env.JWT_REFRESH_EXPIRES_IN
-
-    },
+},
 
 
     bcryptSaltRounds:
