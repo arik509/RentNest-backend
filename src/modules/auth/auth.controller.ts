@@ -4,6 +4,8 @@ import { authService } from "./auth.service.js";
 
 import sendResponse from "../../utils/sendResponse.js";
 
+import { AuthRequest } from "../../middlewares/auth.js";
+
 
 const register = async(
     req:Request,
@@ -39,12 +41,10 @@ const login = async(
     res:Response
 )=>{
 
-
     const {
         email,
         password
     } = req.body;
-
 
 
     const result =
@@ -54,28 +54,77 @@ const login = async(
         );
 
 
+    res.cookie(
+        "accessToken",
+        result.accessToken,
+        {
+            httpOnly:true,
+            secure:false,
+            sameSite:"lax",
+            maxAge:
+                60 * 60 * 1000
+        }
+    );
 
-    sendResponse(res,{
 
-        success:true,
+    res.cookie(
+        "refreshToken",
+        result.refreshToken,
+        {
+            httpOnly:true,
+            secure:false,
+            sameSite:"lax",
+            maxAge:
+                7 * 24 * 60 * 60 * 1000
+        }
+    );
 
-        statusCode:200,
 
-        message:"Login successful",
+    sendResponse(
+        res,
+        {
+            success:true,
+            statusCode:200,
+            message:"Login successful",
+            data:{
+                user:result.user
+            }
+        }
+    );
 
-        data:result
+};
 
-    });
 
+
+
+const me = async(
+    req:AuthRequest,
+    res:Response
+)=>{
+
+
+    const result =
+        await authService.getMe(
+            req.user!.id
+        );
+
+
+    sendResponse(
+        res,
+        {
+            success:true,
+            statusCode:200,
+            message:"User retrieved successfully",
+            data:result
+        }
+    );
 
 };
 
 
 
 export const authController = {
-
     register,
-
-    login
-
+    login,
+    me
 };

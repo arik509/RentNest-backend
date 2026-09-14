@@ -5,6 +5,10 @@ import notFound from "./middlewares/notFound.js";
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
 import authRoute from "./modules/auth/auth.route.js";
 
+import cookieParser from "cookie-parser";
+
+import cors from "cors";
+
 
 const app = express();
 
@@ -35,6 +39,15 @@ app.use(notFound);
 
 
 app.use(globalErrorHandler);
+
+app.use(cookieParser());
+
+app.use(
+ cors({
+    origin:"http://localhost:3000",
+    credentials:true
+ })
+)
 
 
 

@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+
 import { config } from "../config/index.js";
 
 
@@ -10,11 +11,12 @@ export const createAccessToken = (
         payload,
         config.jwt.accessSecret,
         {
-            expiresIn: config.jwt.accessExpiresIn
+            expiresIn: config.jwt.accessExpiresIn as jwt.SignOptions["expiresIn"]
         }
     );
 
 };
+
 
 
 export const createRefreshToken = (
@@ -25,7 +27,7 @@ export const createRefreshToken = (
         payload,
         config.jwt.refreshSecret,
         {
-            expiresIn: config.jwt.refreshExpiresIn
+            expiresIn: config.jwt.refreshExpiresIn as jwt.SignOptions["expiresIn"]
         }
     );
 
