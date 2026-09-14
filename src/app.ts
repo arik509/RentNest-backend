@@ -8,6 +8,7 @@ import userRoute from "./modules/user/user.route.js";
 import adminRoute from "./modules/admin/admin.route.js";
 import categoryRoute from "./modules/category/category.route.js";
 import propertyRoute from "./modules/property/property.route.js";
+import rentalRoute from "./modules/rental/rental.route.js";
 
 
 const app = express();
@@ -69,6 +70,13 @@ app.use(
 app.use(
     "/api",
     propertyRoute
+);
+
+
+
+app.use(
+    "/api/rentals",
+    rentalRoute
 );
 
 app.use(notFound);
