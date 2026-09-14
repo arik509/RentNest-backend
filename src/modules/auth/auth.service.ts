@@ -125,6 +125,15 @@ const loginUser = async(
 
     }
 
+    if(user.status === "BLOCKED"){
+
+    throw new AppError(
+        403,
+        "Your account has been blocked"
+    );
+
+}
+
 
 
     const isPasswordMatch =
