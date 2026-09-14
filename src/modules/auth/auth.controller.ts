@@ -5,6 +5,7 @@ import { authService } from "./auth.service.js";
 import sendResponse from "../../utils/sendResponse.js";
 
 import { AuthRequest } from "../../middlewares/auth.js";
+import AppError from "../../errors/AppError.js";
 
 
 const register = async(
@@ -121,10 +122,69 @@ const me = async(
 
 };
 
+const refreshToken = async(
+    req:Request,
+    res:Response
+)=>{
+
+
+    const token =
+        req.cookies.refreshToken;
+
+
+
+    if(!token){
+
+        throw new AppError(
+            401,
+            "Refresh token missing"
+        );
+
+    }
+
+
+
+    const result =
+        await authService.refreshToken(token);
+
+
+
+    res.cookie(
+        "accessToken",
+        result.accessToken,
+        {
+            httpOnly:true,
+            secure:false,
+            sameSite:"lax",
+            maxAge:
+              60 * 60 * 1000
+        }
+    );
+
+
+
+    sendResponse(
+        res,
+        {
+            success:true,
+            statusCode:200,
+            message:"Access token refreshed successfully",
+            data:null
+        }
+    );
+
+};
+
 
 
 export const authController = {
+
     register,
+
     login,
-    me
+
+    me,
+
+    refreshToken
+
 };

@@ -32,3 +32,25 @@ export const createRefreshToken = (
     );
 
 };
+
+export const verifyAccessToken = (
+    token:string
+) => {
+
+    return jwt.verify(
+        token,
+        config.jwt.accessSecret
+    );
+
+};
+
+export const verifyRefreshToken = (
+    token:string
+) => {
+
+    return jwt.verify(
+        token,
+        config.jwt.refreshSecret
+    );
+
+};

@@ -9,6 +9,11 @@ import {
     createRefreshToken
 } from "../../utils/jwt.js";
 
+import {
+    verifyRefreshToken,
+    verifyAccessToken
+} from "../../utils/jwt.js";
+
 
 interface RegisterData {
 
@@ -211,6 +216,63 @@ const getMe = async(
 
 };
 
+const refreshToken = async(
+    token:string
+)=>{
+
+
+    const decoded =
+        verifyRefreshToken(token) as {
+            id:string;
+        };
+
+
+
+    const user =
+        await prisma.user.findUnique({
+
+            where:{
+                id:decoded.id
+            },
+
+            select:{
+                id:true,
+                role:true,
+                status:true
+            }
+
+        });
+
+
+
+    if(!user){
+
+        throw new AppError(
+            404,
+            "User not found"
+        );
+
+    }
+
+
+
+    const newAccessToken =
+        createAccessToken({
+
+            id:user.id,
+
+            role:user.role
+
+        });
+
+
+
+    return {
+        accessToken:newAccessToken
+    };
+
+};
+
 
 
 export const authService = {
@@ -219,7 +281,8 @@ export const authService = {
 
     loginUser,
 
-    getMe
+    getMe,
+    refreshToken
 
 };
 
