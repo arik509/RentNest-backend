@@ -6,6 +6,7 @@ import {
     PaymentProvider
 } from "../../../generated/prisma/client.js";
 
+import stripe from "./stripe.js";
 
 
 interface PaymentPayload {
@@ -80,30 +81,84 @@ const createPayment = async(
 
 
 
+    const session =
+        await stripe.checkout.sessions.create({
+
+            payment_method_types:[
+                "card"
+            ],
+
+
+            mode:"payment",
+
+
+            line_items:[
+
+                {
+
+                    price_data:{
+
+                        currency:"usd",
+
+                        product_data:{
+
+                            name:
+                            rentalRequest.property.title
+
+                        },
+
+
+                        unit_amount:
+                        payload.amount * 100
+
+                    },
+
+
+                    quantity:1
+
+                }
+
+            ],
+
+
+            success_url:
+            "http://localhost:3000/payment-success",
+
+
+            cancel_url:
+            "http://localhost:3000/payment-cancel"
+
+        });
+
+
+
     const payment =
         await prisma.payment.create({
 
             data:{
 
                 rentalRequestId:
-                    payload.rentalRequestId,
+                payload.rentalRequestId,
+
 
                 amount:
-                    payload.amount,
+                payload.amount,
+
 
                 method:
-                    payload.method,
+                payload.method,
+
 
                 provider:
-                    payload.provider,
+                "STRIPE",
 
-                status:"COMPLETED",
+
+                status:
+                "PENDING",
+
 
                 transactionId:
-                    `TXN-${Date.now()}`,
-
-                paidAt:
-                    new Date()
+                session.id
 
             }
 
@@ -111,21 +166,14 @@ const createPayment = async(
 
 
 
-    await prisma.rentalRequest.update({
+    return {
 
-        where:{
-            id:payload.rentalRequestId
-        },
+        payment,
 
-        data:{
-            status:"ACTIVE"
-        }
+        checkoutUrl:
+        session.url
 
-    });
-
-
-
-    return payment;
+    };
 
 };
 

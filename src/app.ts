@@ -11,6 +11,7 @@ import propertyRoute from "./modules/property/property.route.js";
 import rentalRoute from "./modules/rental/rental.route.js";
 import paymentRoute from "./modules/payment/payment.route.js";
 import reviewRoute from "./modules/review/review.route.js";
+import { paymentController } from "./modules/payment/payment.controller.js";
 
 
 const app = express();
@@ -22,9 +23,19 @@ app.use(
  })
 )
 
+app.use(cookieParser());
+
+app.post(
+    "/api/payments/webhook",
+    express.raw({
+        type:"application/json"
+    }),
+    paymentController.webhook
+);
+
 
 app.use(express.json());
-app.use(cookieParser());
+
 
 app.use(
     express.urlencoded({
@@ -90,6 +101,7 @@ app.use(
     "/api/reviews",
     reviewRoute
 );
+
 
 app.use(notFound);
 
