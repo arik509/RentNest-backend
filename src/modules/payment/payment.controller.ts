@@ -165,6 +165,14 @@ const webhook = async (
                 where: {
                     transactionId:
                         session.id
+                },
+
+                include: {
+                    rentalRequest: {
+                        select: {
+                            propertyId: true
+                        }
+                    }
                 }
             });
 
@@ -214,6 +222,18 @@ const webhook = async (
 
                 data: {
                     status: "ACTIVE"
+                }
+            }),
+
+
+            prisma.property.update({
+                where: {
+                    id:
+                        payment.rentalRequest.propertyId
+                },
+
+                data: {
+                    availabilityStatus: "UNAVAILABLE"
                 }
             })
 
