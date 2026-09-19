@@ -102,114 +102,128 @@ const getPaymentById = async(
 
 
 
-const webhook = async(
-    req:Request,
-    res:Response
-)=>{
-
-    console.log(
-        "BODY TYPE:",
-    typeof req.body,
-    Buffer.isBuffer(req.body),
-        "STRIPE WEBHOOK HIT"
-    );
-
+const webhook = async (
+    req: Request,
+    res: Response
+) => {
 
     const signature =
         req.headers["stripe-signature"];
 
 
-
-    let event:Stripe.Event;
-
-
-
-    try{
-
-        event =
-            stripe.webhooks.constructEvent(
-                req.body,
-                signature!,
-                config.stripe.stripeWebhookSecret
-            );
-
-
-    }catch(error){
-
+    if (
+        !signature ||
+        Array.isArray(signature)
+    ) {
         return res.status(400).json({
-
-            message:"Webhook verification failed"
-
+            message: "Stripe signature is missing"
         });
-
     }
 
 
+    let event: Stripe.Event;
 
-    if(
-        event.type === "checkout.session.completed"
-    ){
+
+    try {
+        event =
+            stripe.webhooks.constructEvent(
+                req.body,
+                signature,
+                config.stripe.stripeWebhookSecret
+            );
+
+    } catch (error) {
+
+        return res.status(400).json({
+            message:
+                "Webhook verification failed"
+        });
+    }
+
+
+    if (
+        event.type ===
+        "checkout.session.completed"
+    ) {
 
         const session =
             event.data.object as Stripe.Checkout.Session;
 
 
+        
+        if (
+            session.payment_status !== "paid"
+        ) {
+            return res.status(200).json({
+                received: true
+            });
+        }
+
 
         const payment =
             await prisma.payment.findUnique({
-
-                where:{
+                where: {
                     transactionId:
-                    session.id
+                        session.id
                 }
-
             });
 
 
+        if (!payment) {
 
-        if(payment){
+            console.log(
+                "Payment not found for Stripe session:",
+                session.id
+            );
 
-
-            await prisma.payment.update({
-
-                where:{
-                    id:payment.id
-                },
-
-                data:{
-
-                    status:"COMPLETED",
-
-                    paidAt:new Date()
-
-                }
-
+            return res.status(200).json({
+                received: true
             });
-
-
-
-            await prisma.rentalRequest.update({
-
-                where:{
-                    id:payment.rentalRequestId
-                },
-
-                data:{
-                    status:"ACTIVE"
-                }
-
-            });
-
         }
 
+
+        
+        if (
+            payment.status === "COMPLETED"
+        ) {
+            return res.status(200).json({
+                received: true
+            });
+        }
+
+
+        await prisma.$transaction([
+
+            prisma.payment.update({
+                where: {
+                    id: payment.id
+                },
+
+                data: {
+                    status: "COMPLETED",
+                    paidAt: new Date()
+                }
+            }),
+
+
+            prisma.rentalRequest.update({
+                where: {
+                    id:
+                        payment.rentalRequestId
+                },
+
+                data: {
+                    status: "ACTIVE"
+                }
+            })
+
+        ]);
     }
 
 
-
-    res.json({
-        received:true
+    return res.status(200).json({
+        received: true
     });
-
 };
 
 
