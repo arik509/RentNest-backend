@@ -27,6 +27,21 @@ router.patch(
     adminController.updateUserStatus
 );
 
+router.get(
+    "/properties",
+    auth,
+    role("ADMIN"),
+    adminController.getAllProperties
+);
+
+
+router.get(
+    "/rentals",
+    auth,
+    role("ADMIN"),
+    adminController.getAllRentals
+);
+
 
 
 export default router;

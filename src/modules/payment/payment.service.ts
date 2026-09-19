@@ -1,284 +1,201 @@
 import prisma from "../../lib/prisma.js";
-
 import AppError from "../../errors/AppError.js";
-
-import {
-    PaymentProvider
-} from "../../../generated/prisma/client.js";
-
 import stripe from "./stripe.js";
 
 
 interface PaymentPayload {
-
-    rentalRequestId:string;
-
-    amount:number;
-
-    method:string;
-
-    provider:PaymentProvider;
-
+    rentalRequestId: string;
+    method: string;
 }
 
 
-
-const createPayment = async(
-    tenantId:string,
-    payload:PaymentPayload
-)=>{
-
+const createPayment = async (
+    tenantId: string,
+    payload: PaymentPayload
+) => {
 
     const rentalRequest =
         await prisma.rentalRequest.findUnique({
-
-            where:{
-                id:payload.rentalRequestId
+            where: {
+                id: payload.rentalRequestId
             },
-
-            include:{
-                property:true
+            include: {
+                property: true
             }
-
         });
 
 
-
-    if(!rentalRequest){
-
+    if (!rentalRequest) {
         throw new AppError(
             404,
             "Rental request not found"
         );
-
     }
 
 
-
-    if(
+    if (
         rentalRequest.tenantId !== tenantId
-    ){
-
+    ) {
         throw new AppError(
             403,
             "You cannot pay for this request"
         );
-
     }
 
 
-
-    if(
+    if (
         rentalRequest.status !== "APPROVED"
-    ){
-
+    ) {
         throw new AppError(
             400,
             "Rental request is not approved"
         );
-
     }
 
+
+    const amount =
+        Number(rentalRequest.property.price);
 
 
     const session =
         await stripe.checkout.sessions.create({
-
-            payment_method_types:[
+            payment_method_types: [
                 "card"
             ],
 
+            mode: "payment",
 
-            mode:"payment",
-
-
-            line_items:[
-
+            line_items: [
                 {
+                    price_data: {
+                        currency: "usd",
 
-                    price_data:{
-
-                        currency:"usd",
-
-                        product_data:{
-
+                        product_data: {
                             name:
-                            rentalRequest.property.title
-
+                                rentalRequest.property.title
                         },
 
-
                         unit_amount:
-                        payload.amount * 100
-
+                            Math.round(amount * 100)
                     },
 
-
-                    quantity:1
-
+                    quantity: 1
                 }
-
             ],
 
-
             success_url:
-            "http://localhost:3000/payment-success",
-
+                "http://localhost:3000/payment-success",
 
             cancel_url:
-            "http://localhost:3000/payment-cancel"
-
+                "http://localhost:3000/payment-cancel"
         });
-
 
 
     const payment =
         await prisma.payment.create({
-
-            data:{
-
+            data: {
                 rentalRequestId:
-                payload.rentalRequestId,
+                    payload.rentalRequestId,
 
-
-                amount:
-                payload.amount,
-
+                amount,
 
                 method:
-                payload.method,
-
+                    payload.method,
 
                 provider:
-                "STRIPE",
-
+                    "STRIPE",
 
                 status:
-                "PENDING",
-
+                    "PENDING",
 
                 transactionId:
-                session.id
-
+                    session.id
             }
-
         });
-
 
 
     return {
-
         payment,
-
         checkoutUrl:
-        session.url
-
+            session.url
     };
-
 };
 
 
 
 
-
-const getPaymentHistory = async(
-    tenantId:string
-)=>{
-
+const getPaymentHistory = async (
+    tenantId: string
+) => {
 
     return prisma.payment.findMany({
-
-        where:{
-
-            rentalRequest:{
+        where: {
+            rentalRequest: {
                 tenantId
             }
-
         },
 
-        include:{
-
-            rentalRequest:{
-                include:{
-                    property:true
+        include: {
+            rentalRequest: {
+                include: {
+                    property: true
                 }
             }
-
         },
 
-
-        orderBy:{
-            createdAt:"desc"
+        orderBy: {
+            createdAt: "desc"
         }
-
     });
-
 };
 
 
 
 
-
-const getPaymentById = async(
-    tenantId:string,
-    paymentId:string
-)=>{
-
+const getPaymentById = async (
+    tenantId: string,
+    paymentId: string
+) => {
 
     const payment =
         await prisma.payment.findUnique({
-
-            where:{
-                id:paymentId
+            where: {
+                id: paymentId
             },
 
-            include:{
-                rentalRequest:true
+            include: {
+                rentalRequest: true
             }
-
         });
 
 
-
-    if(!payment){
-
+    if (!payment) {
         throw new AppError(
             404,
             "Payment not found"
         );
-
     }
 
 
-
-    if(
+    if (
         payment.rentalRequest.tenantId
         !== tenantId
-    ){
-
+    ) {
         throw new AppError(
             403,
             "You cannot access this payment"
         );
-
     }
 
 
-
     return payment;
-
 };
-
 
 
 
 
 export const paymentService = {
-
     createPayment,
-
     getPaymentHistory,
-
     getPaymentById
-
 };

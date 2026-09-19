@@ -36,7 +36,7 @@ const createPayment = async(
         {
             success:true,
             statusCode:201,
-            message:"Payment completed successfully",
+            message:"Payment session created successfully",
             data:result
         }
     );
