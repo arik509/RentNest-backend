@@ -6,6 +6,10 @@ import role from "../../middlewares/role.js";
 
 import { propertyController } from "./property.controller.js";
 
+import validateRequest from "../../middlewares/validateRequest.js";
+
+import { propertyValidation } from "./property.validation.js";
+
 
 const router = Router();
 
@@ -15,6 +19,9 @@ router.post(
     "/landlord/properties",
     auth,
     role("LANDLORD"),
+    validateRequest(
+        propertyValidation.validateCreateProperty
+    ),
     propertyController.createProperty
 );
 
@@ -33,6 +40,9 @@ router.patch(
     "/landlord/properties/:id",
     auth,
     role("LANDLORD"),
+    validateRequest(
+        propertyValidation.validateUpdateProperty
+    ),
     propertyController.updateProperty
 );
 

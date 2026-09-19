@@ -7,13 +7,17 @@ const validateRegister = (
 
     const { name, email, password, role } = body;
 
-    if (!name || typeof name !== "string") {
-        errors.push("Name is required");
-    }
+    if(
+    !name ||
+    typeof name !== "string" ||
+    name.trim().length === 0
+){
+    errors.push("Name is required");
+}
 
     if (!email || typeof email !== "string") {
         errors.push("Email is required");
-    } else if (!emailRegex.test(email)) {
+    } else if (!emailRegex.test(email.trim())) {
         errors.push("Invalid email format");
     }
 
@@ -41,7 +45,7 @@ const validateLogin = (
 
     if (!email || typeof email !== "string") {
         errors.push("Email is required");
-    } else if (!emailRegex.test(email)) {
+    } else if (!emailRegex.test(email.trim())) {
         errors.push("Invalid email format");
     }
 

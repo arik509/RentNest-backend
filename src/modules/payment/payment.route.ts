@@ -6,6 +6,10 @@ import role from "../../middlewares/role.js";
 
 import { paymentController } from "./payment.controller.js";
 
+import validateRequest from "../../middlewares/validateRequest.js";
+
+import { paymentValidation } from "./payment.validation.js";
+
 
 const router = Router();
 
@@ -15,6 +19,9 @@ router.post(
     "/create",
     auth,
     role("TENANT"),
+    validateRequest(
+        paymentValidation.validateCreatePayment
+    ),
     paymentController.createPayment
 );
 

@@ -43,7 +43,7 @@ const createProperty = async(
         await prisma.category.findUnique({
 
             where:{
-                id:payload.categoryId
+                id:payload.categoryId.trim()
             }
 
         });
@@ -65,9 +65,17 @@ const createProperty = async(
         await prisma.property.create({
 
             data:{
-
-                ...payload,
-
+                title:payload.title.trim(),
+                description:payload.description.trim(),
+                price:payload.price,
+                location:payload.location.trim(),
+                address:payload.address.trim(),
+                propertyType:payload.propertyType.trim(),
+                bedrooms:payload.bedrooms,
+                bathrooms:payload.bathrooms,
+                amenities:payload.amenities,
+                images:payload.images,
+                categoryId:payload.categoryId.trim(),
                 landlordId:userId
 
             }
@@ -157,6 +165,76 @@ const updateProperty = async(
     }
 
 
+    if(payload.categoryId){
+
+        const category =
+            await prisma.category.findUnique({
+                where:{
+                    id:payload.categoryId.trim()
+                }
+            });
+
+
+        if(!category){
+
+            throw new AppError(
+                404,
+                "Category not found"
+            );
+
+        }
+
+    }
+
+
+    const data:Partial<PropertyPayload> = {};
+
+
+    if(payload.title !== undefined){
+        data.title = payload.title.trim();
+    }
+
+    if(payload.description !== undefined){
+        data.description = payload.description.trim();
+    }
+
+    if(payload.price !== undefined){
+        data.price = payload.price;
+    }
+
+    if(payload.location !== undefined){
+        data.location = payload.location.trim();
+    }
+
+    if(payload.address !== undefined){
+        data.address = payload.address.trim();
+    }
+
+    if(payload.propertyType !== undefined){
+        data.propertyType = payload.propertyType.trim();
+    }
+
+    if(payload.bedrooms !== undefined){
+        data.bedrooms = payload.bedrooms;
+    }
+
+    if(payload.bathrooms !== undefined){
+        data.bathrooms = payload.bathrooms;
+    }
+
+    if(payload.amenities !== undefined){
+        data.amenities = payload.amenities;
+    }
+
+    if(payload.images !== undefined){
+        data.images = payload.images;
+    }
+
+    if(payload.categoryId !== undefined){
+        data.categoryId = payload.categoryId.trim();
+    }
+
+
 
     const updatedProperty =
         await prisma.property.update({
@@ -166,7 +244,7 @@ const updateProperty = async(
             },
 
 
-            data:payload
+            data
 
         });
 
@@ -246,6 +324,35 @@ const getAllProperties = async(
     } = query;
 
 
+    const parsedMinPrice =
+        minPrice !== undefined && minPrice !== ""
+            ? Number(minPrice)
+            : undefined;
+
+    const parsedMaxPrice =
+        maxPrice !== undefined && maxPrice !== ""
+            ? Number(maxPrice)
+            : undefined;
+
+
+    if(
+        (parsedMinPrice !== undefined &&
+            (!Number.isFinite(parsedMinPrice) || parsedMinPrice < 0)) ||
+        (parsedMaxPrice !== undefined &&
+            (!Number.isFinite(parsedMaxPrice) || parsedMaxPrice < 0)) ||
+        (parsedMinPrice !== undefined &&
+            parsedMaxPrice !== undefined &&
+            parsedMinPrice > parsedMaxPrice)
+    ){
+
+        throw new AppError(
+            400,
+            "Invalid price range"
+        );
+
+    }
+
+
 
     const properties =
         await prisma.property.findMany({
@@ -255,7 +362,7 @@ const getAllProperties = async(
                 availabilityStatus:"AVAILABLE",
 
 
-                ...(location && {
+                ...(typeof location === "string" && location && {
                     location:{
                         contains:location,
                         mode:"insensitive"
@@ -263,20 +370,25 @@ const getAllProperties = async(
                 }),
 
 
-                ...(propertyType && {
+                ...(typeof propertyType === "string" && propertyType && {
                     propertyType
                 }),
 
 
-                ...(minPrice && maxPrice && {
+                ...((parsedMinPrice !== undefined ||
+                    parsedMaxPrice !== undefined) && {
                     price:{
-                        gte:Number(minPrice),
-                        lte:Number(maxPrice)
+                        ...(parsedMinPrice !== undefined && {
+                            gte:parsedMinPrice
+                        }),
+                        ...(parsedMaxPrice !== undefined && {
+                            lte:parsedMaxPrice
+                        })
                     }
                 }),
 
 
-                ...(amenities && {
+                ...(typeof amenities === "string" && amenities && {
                     amenities:{
                         has:amenities
                     }
@@ -317,10 +429,11 @@ const getPropertyById = async(
 
 
     const property =
-        await prisma.property.findUnique({
+        await prisma.property.findFirst({
 
             where:{
-                id
+                id,
+                availabilityStatus:"AVAILABLE"
             },
 
 

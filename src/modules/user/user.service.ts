@@ -75,7 +75,9 @@ const updateProfile = async(
             },
 
             data:{
-                name,
+                name:name !== undefined
+                    ? name.trim()
+                    : undefined,
 
                 profile:{
                     upsert:{

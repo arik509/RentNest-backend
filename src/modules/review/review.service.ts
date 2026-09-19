@@ -1,5 +1,4 @@
 import prisma from "../../lib/prisma.js";
-
 import AppError from "../../errors/AppError.js";
 
 
@@ -16,16 +15,52 @@ interface ReviewPayload {
 
 
 const createReview = async(
+
     tenantId:string,
+
     payload:ReviewPayload
+
 )=>{
 
 
+    if(
+        typeof payload.rating !== "number" ||
+        !Number.isInteger(payload.rating) ||
+        payload.rating < 1 ||
+        payload.rating > 5
+    ){
+
+        throw new AppError(
+            400,
+            "Rating must be between 1 and 5"
+        );
+
+    }
+
+
+
+    if(
+        typeof payload.comment !== "string" ||
+        !payload.comment ||
+        payload.comment.trim().length === 0
+    ){
+
+        throw new AppError(
+            400,
+            "Comment is required"
+        );
+
+    }
+
+
+
+
     const property =
+
         await prisma.property.findUnique({
 
             where:{
-                id:payload.propertyId
+                id:payload.propertyId.trim()
             }
 
         });
@@ -43,36 +78,48 @@ const createReview = async(
 
 
 
+
+
     const rental =
-    await prisma.rentalRequest.findFirst({
 
-        where:{
+        await prisma.rentalRequest.findFirst({
 
-            tenantId,
+            where:{
 
-            propertyId:
-                payload.propertyId,
+                tenantId,
 
-            status:"COMPLETED"
+                propertyId:
+                    payload.propertyId.trim(),
 
-        }
+                status:"COMPLETED"
 
-    });
+            }
+
+        });
+
+
 
 
 
     if(!rental){
 
         throw new AppError(
+
             400,
+
             "You can review only after completing rental"
+
         );
 
     }
 
 
 
+
+
+
     const existingReview =
+
         await prisma.review.findFirst({
 
             where:{
@@ -80,7 +127,7 @@ const createReview = async(
                 tenantId,
 
                 propertyId:
-                    payload.propertyId
+                    payload.propertyId.trim()
 
             }
 
@@ -88,18 +135,27 @@ const createReview = async(
 
 
 
+
+
     if(existingReview){
 
         throw new AppError(
+
             400,
+
             "You already reviewed this property"
+
         );
 
     }
 
 
 
+
+
+
     const review =
+
         await prisma.review.create({
 
             data:{
@@ -107,17 +163,19 @@ const createReview = async(
                 tenantId,
 
                 propertyId:
-                    payload.propertyId,
+                    payload.propertyId.trim(),
 
                 rating:
                     payload.rating,
 
                 comment:
-                    payload.comment
+                    payload.comment.trim()
 
             }
 
         });
+
+
 
 
 
@@ -129,35 +187,52 @@ const createReview = async(
 
 
 
+
+
+
+
 const getPropertyReviews = async(
+
     propertyId:string
+
 )=>{
 
 
     return prisma.review.findMany({
 
         where:{
+
             propertyId
+
         },
 
         include:{
 
             tenant:{
+
                 select:{
+
                     name:true
+
                 }
+
             }
 
         },
 
 
         orderBy:{
+
             createdAt:"desc"
+
         }
 
     });
 
 };
+
+
+
 
 
 

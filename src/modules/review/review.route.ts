@@ -6,6 +6,10 @@ import role from "../../middlewares/role.js";
 
 import { reviewController } from "./review.controller.js";
 
+import validateRequest from "../../middlewares/validateRequest.js";
+
+import { reviewValidation } from "./review.validation.js";
+
 
 const router = Router();
 
@@ -15,6 +19,9 @@ router.post(
     "/",
     auth,
     role("TENANT"),
+    validateRequest(
+        reviewValidation.validateCreateReview
+    ),
     reviewController.createReview
 );
 

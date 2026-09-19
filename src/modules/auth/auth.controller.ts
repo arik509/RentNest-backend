@@ -60,7 +60,8 @@ const login = async(
         result.accessToken,
         {
             httpOnly:true,
-            secure:false,
+            secure:
+                process.env.NODE_ENV === "production",
             sameSite:"lax",
             maxAge:
                 60 * 60 * 1000
@@ -73,7 +74,8 @@ const login = async(
         result.refreshToken,
         {
             httpOnly:true,
-            secure:false,
+            secure:
+                process.env.NODE_ENV === "production",
             sameSite:"lax",
             maxAge:
                 7 * 24 * 60 * 60 * 1000
@@ -154,7 +156,8 @@ const refreshToken = async(
         result.accessToken,
         {
             httpOnly:true,
-            secure:false,
+            secure:
+                process.env.NODE_ENV === "production",
             sameSite:"lax",
             maxAge:
               60 * 60 * 1000

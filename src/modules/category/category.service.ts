@@ -14,7 +14,7 @@ const createCategory = async(
     const existingCategory =
         await prisma.category.findUnique({
             where:{
-                name:payload.name
+                name:payload.name.trim()
             }
         });
 
@@ -34,7 +34,10 @@ const createCategory = async(
     const category =
         await prisma.category.create({
 
-            data:payload
+            data:{
+                name:payload.name.trim(),
+                description:payload.description
+            }
 
         });
 
@@ -106,7 +109,14 @@ const updateCategory = async(
             id
         },
 
-        data:payload
+        data:{
+            ...(payload.name !== undefined && {
+                name:payload.name.trim()
+            }),
+            ...(payload.description !== undefined && {
+                description:payload.description
+            })
+        }
 
     });
 

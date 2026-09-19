@@ -17,7 +17,7 @@ const createPayment = async (
     const rentalRequest =
         await prisma.rentalRequest.findUnique({
             where: {
-                id: payload.rentalRequestId
+                id: payload.rentalRequestId.trim()
             },
             include: {
                 property: true
@@ -52,22 +52,22 @@ const createPayment = async (
         );
     }
 
+
+    if (
+        rentalRequest.property.availabilityStatus
+        !== "AVAILABLE"
+    ) {
+        throw new AppError(
+            400,
+            "Property is not available"
+        );
+    }
+
     const existingPayment =
-    await prisma.payment.findFirst({
+    await prisma.payment.findUnique({
         where: {
             rentalRequestId:
-                payload.rentalRequestId,
-
-            status: {
-                in: [
-                    "PENDING",
-                    "COMPLETED"
-                ]
-            }
-        },
-
-        orderBy: {
-            createdAt: "desc"
+                payload.rentalRequestId.trim()
         }
     });
 
@@ -100,6 +100,16 @@ if (
             checkoutUrl:
                 existingSession.url
         };
+    }
+
+
+    if (
+        existingSession.status === "complete"
+    ) {
+        throw new AppError(
+            400,
+            "Payment checkout has already been completed"
+        );
     }
 }
 
@@ -142,11 +152,25 @@ if (
         });
 
 
-    const payment =
-        await prisma.payment.create({
+    const payment = existingPayment
+        ? await prisma.payment.update({
+            where:{
+                id:existingPayment.id
+            },
+
+            data:{
+                amount,
+                method:payload.method,
+                provider:"STRIPE",
+                status:"PENDING",
+                transactionId:session.id,
+                paidAt:null
+            }
+        })
+        : await prisma.payment.create({
             data: {
                 rentalRequestId:
-                    payload.rentalRequestId,
+                    payload.rentalRequestId.trim(),
 
                 amount,
 

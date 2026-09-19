@@ -6,6 +6,10 @@ import role from "../../middlewares/role.js";
 
 import { adminController } from "./admin.controller.js";
 
+import validateRequest from "../../middlewares/validateRequest.js";
+
+import { adminValidation } from "./admin.validation.js";
+
 
 const router = Router();
 
@@ -24,6 +28,9 @@ router.patch(
     "/users/:id",
     auth,
     role("ADMIN"),
+    validateRequest(
+        adminValidation.validateUpdateUserStatus
+    ),
     adminController.updateUserStatus
 );
 

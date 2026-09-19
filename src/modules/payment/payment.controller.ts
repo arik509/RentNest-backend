@@ -14,6 +14,8 @@ import prisma from "../../lib/prisma.js";
 
 import { config } from "../../config/index.js";
 
+import AppError from "../../errors/AppError.js";
+
 
 
 
@@ -116,7 +118,9 @@ const webhook = async (
         Array.isArray(signature)
     ) {
         return res.status(400).json({
-            message: "Stripe signature is missing"
+            success:false,
+            message: "Stripe signature is missing",
+            errorDetails:null
         });
     }
 
@@ -135,8 +139,10 @@ const webhook = async (
     } catch (error) {
 
         return res.status(400).json({
+            success:false,
             message:
-                "Webhook verification failed"
+                "Webhook verification failed",
+            errorDetails:null
         });
     }
 
@@ -160,84 +166,161 @@ const webhook = async (
         }
 
 
-        const payment =
-            await prisma.payment.findUnique({
-                where: {
-                    transactionId:
-                        session.id
-                },
+        await prisma.$transaction(
+            async transaction => {
 
-                include: {
-                    rentalRequest: {
-                        select: {
-                            propertyId: true
+                const payment =
+                    await transaction.payment.findUnique({
+                        where: {
+                            transactionId:
+                                session.id
+                        },
+
+                        include: {
+                            rentalRequest: {
+                                select: {
+                                    id:true,
+                                    status:true,
+                                    property:{
+                                        select:{
+                                            id:true,
+                                            availabilityStatus:true
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
+                    });
+
+
+                if (!payment) {
+
+                    console.log(
+                        "Payment not found for Stripe session:",
+                        session.id
+                    );
+
+                    return;
                 }
-            });
 
 
-        if (!payment) {
-
-            console.log(
-                "Payment not found for Stripe session:",
-                session.id
-            );
-
-            return res.status(200).json({
-                received: true
-            });
-        }
-
-
-        
-        if (
-            payment.status === "COMPLETED"
-        ) {
-            return res.status(200).json({
-                received: true
-            });
-        }
-
-
-        await prisma.$transaction([
-
-            prisma.payment.update({
-                where: {
-                    id: payment.id
-                },
-
-                data: {
-                    status: "COMPLETED",
-                    paidAt: new Date()
+                if (
+                    payment.status === "COMPLETED"
+                ) {
+                    return;
                 }
-            }),
 
 
-            prisma.rentalRequest.update({
-                where: {
-                    id:
-                        payment.rentalRequestId
-                },
+                if(payment.status !== "PENDING"){
 
-                data: {
-                    status: "ACTIVE"
+                    throw new AppError(
+                        409,
+                        "Payment is not pending"
+                    );
+
                 }
-            }),
 
 
-            prisma.property.update({
-                where: {
-                    id:
-                        payment.rentalRequest.propertyId
-                },
+                if(
+                    payment.rentalRequest.status
+                    !== "APPROVED"
+                ){
 
-                data: {
-                    availabilityStatus: "UNAVAILABLE"
+                    throw new AppError(
+                        409,
+                        "Rental request is not approved"
+                    );
+
                 }
-            })
 
-        ]);
+
+                if(
+                    payment.rentalRequest.property
+                        .availabilityStatus
+                    !== "AVAILABLE"
+                ){
+
+                    throw new AppError(
+                        409,
+                        "Property is not available"
+                    );
+
+                }
+
+
+                const paymentUpdate =
+                    await transaction.payment.updateMany({
+                        where:{
+                            id:payment.id,
+                            status:"PENDING"
+                        },
+
+                        data: {
+                            status: "COMPLETED",
+                            paidAt: new Date()
+                        }
+                    });
+
+
+                if(paymentUpdate.count !== 1){
+
+                    throw new AppError(
+                        409,
+                        "Payment state changed"
+                    );
+
+                }
+
+
+                const rentalUpdate =
+                    await transaction.rentalRequest.updateMany({
+                        where: {
+                            id:
+                                payment.rentalRequest.id,
+                            status:"APPROVED"
+                        },
+
+                        data: {
+                            status: "ACTIVE"
+                        }
+                    });
+
+
+                if(rentalUpdate.count !== 1){
+
+                    throw new AppError(
+                        409,
+                        "Rental request state changed"
+                    );
+
+                }
+
+
+                const propertyUpdate =
+                    await transaction.property.updateMany({
+                        where: {
+                            id:
+                                payment.rentalRequest.property.id,
+                            availabilityStatus:"AVAILABLE"
+                        },
+
+                        data: {
+                            availabilityStatus: "UNAVAILABLE"
+                        }
+                    });
+
+
+                if(propertyUpdate.count !== 1){
+
+                    throw new AppError(
+                        409,
+                        "Property availability changed"
+                    );
+
+                }
+
+            }
+        );
     }
 
 

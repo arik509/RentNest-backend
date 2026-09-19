@@ -9,10 +9,7 @@ import {
     createRefreshToken
 } from "../../utils/jwt.js";
 
-import {
-    verifyRefreshToken,
-    verifyAccessToken
-} from "../../utils/jwt.js";
+import { verifyRefreshToken } from "../../utils/jwt.js";
 
 
 interface RegisterData {
@@ -34,10 +31,26 @@ const registerUser = async (
 )=>{
 
 
+    if(
+        payload.role !== "TENANT" &&
+        payload.role !== "LANDLORD"
+    ){
+
+        throw new AppError(
+            400,
+            "Role must be TENANT or LANDLORD"
+        );
+
+    }
+
+
+    const email = payload.email.trim().toLowerCase();
+
+
     const existingUser =
         await prisma.user.findUnique({
             where:{
-                email:payload.email
+                email
             }
         });
 
@@ -66,9 +79,9 @@ const registerUser = async (
 
             data:{
 
-                name:payload.name,
+                name:payload.name.trim(),
 
-                email:payload.email,
+                email,
 
                 password:hashedPassword,
 
@@ -107,10 +120,14 @@ const loginUser = async(
 )=>{
 
 
+    const normalizedEmail =
+        email.trim().toLowerCase();
+
+
     const user =
         await prisma.user.findUnique({
             where:{
-                email
+                email:normalizedEmail
             }
         });
 
@@ -119,8 +136,8 @@ const loginUser = async(
     if(!user){
 
         throw new AppError(
-            404,
-            "User not found"
+            401,
+            "Invalid email or password"
         );
 
     }
@@ -148,7 +165,7 @@ const loginUser = async(
 
         throw new AppError(
             401,
-            "Invalid password"
+            "Invalid email or password"
         );
 
     }
@@ -230,10 +247,39 @@ const refreshToken = async(
 )=>{
 
 
-    const decoded =
-        verifyRefreshToken(token) as {
-            id:string;
-        };
+    let decoded:{
+        id:string;
+    };
+
+
+    try{
+
+        decoded =
+            verifyRefreshToken(token) as {
+                id:string;
+            };
+
+    } catch(error){
+
+        throw new AppError(
+            401,
+            "Invalid refresh token"
+        );
+
+    }
+
+
+    if(
+        !decoded.id ||
+        typeof decoded.id !== "string"
+    ){
+
+        throw new AppError(
+            401,
+            "Invalid refresh token"
+        );
+
+    }
 
 
 
@@ -259,6 +305,16 @@ const refreshToken = async(
         throw new AppError(
             404,
             "User not found"
+        );
+
+    }
+
+
+    if(user.status === "BLOCKED"){
+
+        throw new AppError(
+            403,
+            "Your account has been blocked"
         );
 
     }

@@ -16,7 +16,7 @@ const createRentalRequest = async(
         await prisma.property.findUnique({
 
             where:{
-                id:payload.propertyId
+                id:payload.propertyId.trim()
             }
 
         });
@@ -42,60 +42,93 @@ const createRentalRequest = async(
     }
 
 
-    const existingRequest =
-        await prisma.rentalRequest.findFirst({
-
-            where:{
-                tenantId,
-
-                propertyId:
-                    payload.propertyId,
-
-                status:{
-                    in:[
-                        "PENDING",
-                        "APPROVED",
-                        "ACTIVE"
-                    ]
-                }
-            }
-
-        });
-
-
-    if(existingRequest){
-
-        throw new AppError(
-            400,
-            "Rental request already exists"
-        );
-
-    }
-
-
-
     const request =
-        await prisma.rentalRequest.create({
+        await prisma.$transaction(
+            async transaction => {
 
-            data:{
+                const currentProperty =
+                    await transaction.property.findUnique({
+                        where:{
+                            id:payload.propertyId.trim()
+                        },
+                        select:{
+                            availabilityStatus:true
+                        }
+                    });
 
-                tenantId,
 
-                propertyId:
-                    payload.propertyId,
+                if(
+                    !currentProperty ||
+                    currentProperty.availabilityStatus
+                    !== "AVAILABLE"
+                ){
 
-                message:
-                    payload.message
+                    throw new AppError(
+                        400,
+                        "Property is not available"
+                    );
+
+                }
+
+                const existingRequest =
+                    await transaction.rentalRequest.findFirst({
+
+                        where:{
+                            tenantId,
+
+                            propertyId:
+                                payload.propertyId.trim(),
+
+                            status:{
+                                in:[
+                                    "PENDING",
+                                    "APPROVED",
+                                    "ACTIVE"
+                                ]
+                            }
+                        }
+
+                    });
+
+
+                if(existingRequest){
+
+                    throw new AppError(
+                        400,
+                        "Rental request already exists"
+                    );
+
+                }
+
+
+                return transaction.rentalRequest.create({
+
+                    data:{
+
+                        tenantId,
+
+                        propertyId:
+                            payload.propertyId.trim(),
+
+                        message:
+                            payload.message?.trim()
+
+                    },
+
+                    include:{
+
+                        property:true
+
+                    }
+
+                });
 
             },
 
-            include:{
-
-                property:true
-
+            {
+                isolationLevel:"Serializable"
             }
-
-        });
+        );
 
 
     return request;
@@ -147,7 +180,12 @@ const getLandlordRequests = async(
         },
 
         include:{
-            tenant:true,
+            tenant:{
+                select:{
+                    id:true,
+                    name:true,
+            }
+            },
 
             property:true
 
@@ -214,17 +252,59 @@ const updateRequestStatus = async(
     }
 
 
+    if(
+        status !== "APPROVED" &&
+        status !== "REJECTED"
+    ){
 
-    return prisma.rentalRequest.update({
+        throw new AppError(
+            400,
+            "Invalid rental request status"
+        );
 
+    }
+
+
+    if(request.status !== "PENDING"){
+
+        throw new AppError(
+            400,
+            "Only pending rental requests can be approved or rejected"
+        );
+
+    }
+
+
+
+    const updatedRequest =
+        await prisma.rentalRequest.updateMany({
+
+            where:{
+                id:requestId,
+                status:"PENDING"
+            },
+
+            data:{
+                status
+            }
+
+        });
+
+
+    if(updatedRequest.count !== 1){
+
+        throw new AppError(
+            409,
+            "Rental request state changed"
+        );
+
+    }
+
+
+    return prisma.rentalRequest.findUnique({
         where:{
             id:requestId
-        },
-
-        data:{
-            status
         }
-
     });
 
 };
@@ -288,17 +368,36 @@ const completeRentalRequest = async(
 
 
 
-    const updatedRequest =
-        await prisma.rentalRequest.update({
+    const updatedRequestResult =
+        await prisma.rentalRequest.updateMany({
 
             where:{
-                id:requestId
+                id:requestId,
+                status:"ACTIVE"
             },
 
             data:{
                 status:"COMPLETED"
             }
 
+        });
+
+
+    if(updatedRequestResult.count !== 1){
+
+        throw new AppError(
+            409,
+            "Rental request state changed"
+        );
+
+    }
+
+
+    const updatedRequest =
+        await prisma.rentalRequest.findUnique({
+            where:{
+                id:requestId
+            }
         });
 
 
