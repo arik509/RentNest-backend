@@ -52,6 +52,57 @@ const createPayment = async (
         );
     }
 
+    const existingPayment =
+    await prisma.payment.findFirst({
+        where: {
+            rentalRequestId:
+                payload.rentalRequestId,
+
+            status: {
+                in: [
+                    "PENDING",
+                    "COMPLETED"
+                ]
+            }
+        },
+
+        orderBy: {
+            createdAt: "desc"
+        }
+    });
+
+
+if (
+    existingPayment?.status === "COMPLETED"
+) {
+    throw new AppError(
+        400,
+        "Payment has already been completed for this rental request"
+    );
+}
+
+
+if (
+    existingPayment?.status === "PENDING"
+) {
+
+    const existingSession =
+        await stripe.checkout.sessions.retrieve(
+            existingPayment.transactionId
+        );
+
+
+    if (
+        existingSession.status === "open"
+    ) {
+        return {
+            payment: existingPayment,
+            checkoutUrl:
+                existingSession.url
+        };
+    }
+}
+
 
     const amount =
         Number(rentalRequest.property.price);
