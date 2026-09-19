@@ -1,0 +1,10 @@
+import { Router } from "express";
+import auth from "../../middlewares/auth.js";
+import role from "../../middlewares/role.js";
+import { reviewController } from "./review.controller.js";
+import validateRequest from "../../middlewares/validateRequest.js";
+import { reviewValidation } from "./review.validation.js";
+const router = Router();
+router.post("/", auth, role("TENANT"), validateRequest(reviewValidation.validateCreateReview), reviewController.createReview);
+router.get("/property/:propertyId", reviewController.getPropertyReviews);
+export default router;

@@ -1,0 +1,12 @@
+import { Router } from "express";
+import auth from "../../middlewares/auth.js";
+import role from "../../middlewares/role.js";
+import { adminController } from "./admin.controller.js";
+import validateRequest from "../../middlewares/validateRequest.js";
+import { adminValidation } from "./admin.validation.js";
+const router = Router();
+router.get("/users", auth, role("ADMIN"), adminController.getAllUsers);
+router.patch("/users/:id", auth, role("ADMIN"), validateRequest(adminValidation.validateUpdateUserStatus), adminController.updateUserStatus);
+router.get("/properties", auth, role("ADMIN"), adminController.getAllProperties);
+router.get("/rentals", auth, role("ADMIN"), adminController.getAllRentals);
+export default router;

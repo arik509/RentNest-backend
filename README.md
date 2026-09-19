@@ -10,6 +10,10 @@ The backend provides role-based workflows for three main user types:
 - **Landlord** — creates and manages properties, reviews rental requests, and completes active rentals.
 - **Admin** — manages users and categories and can inspect properties and rental requests.
 
+## Backend URL: https://rentnest-backend-zbpn.onrender.com
+
+
+
 ## 2. Features
 
 ### Authentication
@@ -351,8 +355,8 @@ Application errors use the following response shape:
 Use local development credentials only:
 
 ```text
-Email: <admin-email>
-Password: <admin-password>
+Email: sakib.ahmed02@gmail.com
+Password: 12345678
 ```
 
 Create or configure the admin account securely for your local environment. Do not publish real credentials.

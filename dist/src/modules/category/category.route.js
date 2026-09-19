@@ -1,0 +1,12 @@
+import { Router } from "express";
+import auth from "../../middlewares/auth.js";
+import role from "../../middlewares/role.js";
+import { categoryController } from "./category.controller.js";
+import validateRequest from "../../middlewares/validateRequest.js";
+import { categoryValidation } from "./category.validation.js";
+const router = Router();
+router.get("/", categoryController.getAllCategories);
+router.post("/", auth, role("ADMIN"), validateRequest(categoryValidation.validateCreateCategory), categoryController.createCategory);
+router.patch("/:id", auth, role("ADMIN"), validateRequest(categoryValidation.validateUpdateCategory), categoryController.updateCategory);
+router.delete("/:id", auth, role("ADMIN"), categoryController.deleteCategory);
+export default router;
