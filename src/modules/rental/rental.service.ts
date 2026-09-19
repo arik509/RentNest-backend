@@ -42,6 +42,37 @@ const createRentalRequest = async(
     }
 
 
+    const existingRequest =
+        await prisma.rentalRequest.findFirst({
+
+            where:{
+                tenantId,
+
+                propertyId:
+                    payload.propertyId,
+
+                status:{
+                    in:[
+                        "PENDING",
+                        "APPROVED",
+                        "ACTIVE"
+                    ]
+                }
+            }
+
+        });
+
+
+    if(existingRequest){
+
+        throw new AppError(
+            400,
+            "Rental request already exists"
+        );
+
+    }
+
+
 
     const request =
         await prisma.rentalRequest.create({
